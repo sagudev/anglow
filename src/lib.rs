@@ -1,8 +1,22 @@
+#[cfg(feature = "static")]
+extern "C" {
+    fn eglGetProcAddress(name: *const std::ffi::c_char) -> *const std::ffi::c_void;
+}
+
 #[cfg(test)]
 mod tests {
+    use glow::Context;
+    use glow::HasContext;
+
+    #[cfg(feature = "static")]
+    #[test]
+    fn static_linkage() {
+        let gl =
+            unsafe { Context::from_loader_function_cstr(|s| crate::eglGetProcAddress(s.as_ptr())) };
+        println!("{:?}", gl.supported_extensions())
+    }
     #[test]
     fn dynamic_linkage() {
-        use glow::HasContext;
         use glutin::api::egl::device::Device;
         use glutin::api::egl::display::Display;
         use glutin::config::ConfigSurfaceTypes;
@@ -62,8 +76,7 @@ mod tests {
 
         // Make the context current for rendering
         let _context = not_current.make_current_surfaceless().unwrap();
-        let gl =
-            unsafe { glow::Context::from_loader_function_cstr(|s| display.get_proc_address(s)) };
+        let gl = unsafe { Context::from_loader_function_cstr(|s| display.get_proc_address(s)) };
         println!("{:?}", gl.supported_extensions())
     }
 }

@@ -10,15 +10,34 @@ const COMMIT: &str = "108a8f8";
 
 fn main() {
     let out = PathBuf::from(env::var_os("OUT_DIR").unwrap());
+    let out_lib = out.join("lib");
+    fs::create_dir_all(&out_lib).unwrap();
     let target = env::var("TARGET").unwrap();
     let archive = download_archive(&out, &target, None).unwrap();
-    extract(&out, &archive);
+    extract(&out_lib, &archive);
     if &target == "x86_64-unknown-linux-gnu" {
         // libEGL.so.1 is read first in glutin
-        std::fs::copy(out.join("libEGL.so"), out.join("libEGL.so.1")).unwrap();
+        fs::copy(out_lib.join("libEGL.so"), out_lib.join("libEGL.so.1")).unwrap();
     }
-    println!("cargo:rustc-link-search={}", out.display());
-    println!("cargo:rustc-link-lib=libEGL");
+    println!("cargo:rustc-link-search={}", out_lib.display());
+    // make copies to and target/profile, target/profile/deps
+    let profile = out.parent().unwrap().parent().unwrap().parent().unwrap();
+    let deps = profile.join("deps");
+    for f in fs::read_dir(out_lib).unwrap().flatten() {
+        if f.path().is_file() {
+            let filename = f.file_name();
+            fs::copy(f.path(), profile.join(&filename)).unwrap();
+            fs::copy(f.path(), deps.join(&filename)).unwrap();
+        }
+    }
+
+    if env::var("CARGO_FEATURE_STATIC").is_ok() {
+        let lib = match target.as_str() {
+            "x86_64-pc-windows-msvc" => "libEGL.dll",
+            _ => "EGL",
+        };
+        println!("cargo:rustc-link-lib={lib}");
+    }
 }
 
 fn download_archive(
@@ -27,7 +46,7 @@ fn download_archive(
     base: Option<&str>,
 ) -> Result<PathBuf, std::io::Error> {
     let base = base.unwrap_or("https://github.com/sagudev/prebuild-angle/releases/download");
-    let archive_path = out.join("angle.gz");
+    let archive_path = out.join("angle.zip");
     let archive = format!("{base}/angle-{COMMIT}/ANGLE-{COMMIT}-{target}.zip");
     if !archive_path.exists()
         && !Command::new("curl")
