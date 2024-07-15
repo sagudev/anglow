@@ -18,7 +18,7 @@ fn main() {
         std::fs::copy(out.join("libEGL.so"), out.join("libEGL.so.1")).unwrap();
     }
     println!("cargo:rustc-link-search={}", out.display());
-    //println!("cargo:rustc-link-lib=libEGL");
+    println!("cargo:rustc-link-lib=libEGL");
 }
 
 fn download_archive(
