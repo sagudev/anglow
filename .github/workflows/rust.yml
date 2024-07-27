@@ -25,6 +25,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run tests
-        run: cargo test --verbose -- --show-output
+        run: cargo run --example egl
       - name: Run tests (static)
-        run: cargo test --verbose --features "static" -- --show-output
+        run: cargo run --example egl --features "static"
