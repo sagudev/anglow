@@ -1,5 +1,5 @@
 use glow::HasContext;
-use glutin::config::{ConfigTemplateBuilder, GlConfig};
+use glutin::config::{ConfigSurfaceTypes, ConfigTemplateBuilder, GlConfig};
 use glutin::context::{ContextApi, ContextAttributesBuilder};
 use glutin::display::GetGlDisplay;
 use glutin::prelude::GlDisplay;
@@ -11,7 +11,7 @@ fn main() {
     let event_loop = EventLoop::new().unwrap();
     //let window_attributes = winit::window::WindowAttributes::new();
 
-    let template = ConfigTemplateBuilder::new();
+    let template = ConfigTemplateBuilder::new().with_surface_type(ConfigSurfaceTypes::empty());
 
     let display_builder =
         DisplayBuilder::new().with_preference(glutin_winit::ApiPreference::PreferEgl);
@@ -56,7 +56,7 @@ fn main() {
     // Make the context current
     let cx = match not_current {
         glutin::context::NotCurrentContext::Egl(cx) => cx,
-        _ => panic!("Not expected"),
+        _ => panic!("Not expected {not_current:?}"),
     };
     let _context = cx.make_current_surfaceless().unwrap();
 
