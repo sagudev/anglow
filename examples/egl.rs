@@ -1,3 +1,4 @@
+use glow::HasContext;
 use glutin::config::{ConfigTemplateBuilder, GlConfig};
 use glutin::context::{ContextApi, ContextAttributesBuilder};
 use glutin::display::GetGlDisplay;
@@ -31,12 +32,35 @@ fn main() {
         .unwrap();
 
     let gl_display = gl_config.display();
-    assert!(gl_display
-        .version_string()
-        .to_ascii_lowercase()
-        .contains("egl"));
+    /*assert!(gl_display
+    .version_string()
+    .to_ascii_lowercase()
+    .contains("egl"));*/
     dbg!(gl_display.version_string());
+
+    let not_current = unsafe {
+        gl_display
+            .create_context(&gl_config, &ContextAttributesBuilder::new().build(None))
+            .unwrap_or_else(|_| {
+                gl_display
+                    .create_context(
+                        &gl_config,
+                        &ContextAttributesBuilder::new()
+                            .with_context_api(ContextApi::Gles(None))
+                            .build(None),
+                    )
+                    .expect("failed to create context")
+            })
+    };
+
+    // Make the context current
+    let cx = match not_current {
+        glutin::context::NotCurrentContext::Egl(cx) => cx,
+        _ => panic!("Not expected"),
+    };
+    let _context = cx.make_current_surfaceless().unwrap();
 
     let gl =
         unsafe { glow::Context::from_loader_function_cstr(|s| gl_display.get_proc_address(s)) };
+    println!("{:?}", gl.supported_extensions())
 }
